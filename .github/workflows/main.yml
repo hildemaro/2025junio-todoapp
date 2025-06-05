@@ -1,48 +1,66 @@
 name: OWASP ZAP Scan
 
 on:
-  workflow_dispatch: # Permite la ejecución manual
+  workflow_dispatch:
   push:
-    branches: [ main ] # Ejecuta en pushes a la rama main
+    branches: [ main ]
   pull_request:
-    branches: [ main ] # Ejecuta en pull requests a la rama main
+    branches: [ main ]
 
 jobs:
   zap_scan:
     runs-on: ubuntu-latest
     name: Scan Website with OWASP ZAP
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+
+      - name: Extract URL from Code
+        id: extract_url # Le damos un ID al paso para referenciar sus salidas
+        run: |
+          # --- Elige UNA de las siguientes opciones y borra o comenta las otras ---
+
+          # Opción A: Para archivos .env (o similares)
+          # Reemplaza 'DEPLOY_URL=' y '.env' con tu clave y nombre de archivo
+          #URL_VALUE=$(grep 'DEPLOY_URL=' .env | cut -d '=' -f 2- | tr -d '"')
+
+          # Opción B: Para archivos JSON
+          # Reemplaza '.deployment.targetUrl' y 'config.json' con tu selector y nombre de archivo
+          # URL_VALUE=$(jq -r '.deployment.targetUrl' config.json)
+          
+          # Opción C: Para archivos de texto simple
+          # Reemplaza 'url.txt' con el nombre de tu archivo
+          URL_VALUE=$(cat url.txt)
+
+          # --- No modifiques las siguientes líneas ---
+          if [ -z "$URL_VALUE" ]; then
+            echo "Error: No se pudo extraer la URL del archivo de código."
+            exit 1
+          fi
+          echo "URL extraída: $URL_VALUE"
+          echo "URL_TO_SCAN=$URL_VALUE" >> $GITHUB_ENV
 
       - name: Create ZAP directory and Set Permissions
         run: |
           mkdir -p ./zap/wrk
           sudo chmod -R 777 ./zap/wrk
-          # Explicación:
-          # mkdir -p ./zap/wrk: Crea el directorio si no existe.
-          # sudo chmod -R 777 ./zap/wrk: Cambia los permisos del directorio ./zap/wrk
-          # de forma recursiva (-R) para que cualquier usuario (777 - lectura, escritura, ejecución para todos)
-          # pueda escribir en él. Esto incluye al usuario 'zap' (UID 1000) dentro del contenedor Docker.
 
       - name: Run ZAP Scan
-        # Documentación de la imagen Docker de ZAP: https://www.zaproxy.org/docs/docker/
         run: |
+          echo "Iniciando escaneo ZAP en la URL extraída del código: ${{ env.URL_TO_SCAN }}"
+
           docker run --rm \
             -v $(pwd)/zap/wrk:/zap/wrk:rw \
-            zaproxy/zap-stable zap-baseline.py \
-            -t https://www.example.com \
+            owasp/zap2docker-stable zap-baseline.py \
+            -t ${{ env.URL_TO_SCAN }} \
             -g gen.conf \
-            -w report.md || echo "ZAP scan found vulnerabilities or an error occurred. Exit code: $?"
-          # El '|| echo' es para evitar que el workflow falle si ZAP encuentra vulnerabilidades (exit code > 0)
-          # Se ha añadido "$?" para mostrar el código de salida de ZAP, que puede ser útil para depurar.
+            -r report.html || echo "ZAP scan found vulnerabilities or an error occurred. Exit code: $?"
 
       - name: Upload ZAP Report
-        # Sube el informe generado como un artefacto del workflow
-        # Este paso se ejecutará incluso si el paso anterior tiene '|| echo ...'
-        if: always() # Asegura que este paso se ejecute siempre, incluso si el escaneo "falla" (encuentra vulnerabilidades)
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: ZAP-Report
-          path: ./zap/wrk/report.md
-          retention-days: 7 # Opcional: cuántos días mantener el artefacto
+          path: ./zap/wrk/report.html
+          retention-days: 7
