@@ -15,25 +15,32 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Run ZAP Scan
-        # Documentación de la imagen Docker de ZAP: https://www.zaproxy.org/docs/docker/
-        # Este comando ejecuta un escaneo base pasivo y activo contra la URL especificada.
-        # Puedes personalizar los parámetros de ZAP según tus necesidades.
-        # '-t' especifica la URL objetivo.
-        # '-g gen.conf' genera un archivo de configuración (opcional).
-        # '-r report.html' genera un informe en formato HTML.
-        # '--' se utiliza para pasar argumentos directamente al script zap.sh dentro del contenedor.
+      - name: Create ZAP directory and Set Permissions
         run: |
           mkdir -p ./zap/wrk
+          sudo chmod -R 777 ./zap/wrk
+          # Explicación:
+          # mkdir -p ./zap/wrk: Crea el directorio si no existe.
+          # sudo chmod -R 777 ./zap/wrk: Cambia los permisos del directorio ./zap/wrk
+          # de forma recursiva (-R) para que cualquier usuario (777 - lectura, escritura, ejecución para todos)
+          # pueda escribir en él. Esto incluye al usuario 'zap' (UID 1000) dentro del contenedor Docker.
+
+      - name: Run ZAP Scan
+        # Documentación de la imagen Docker de ZAP: https://www.zaproxy.org/docs/docker/
+        run: |
           docker run --rm \
             -v $(pwd)/zap/wrk:/zap/wrk:rw \
             zaproxy/zap-stable zap-baseline.py \
             -t https://www.example.com \
-            -r report.html || echo "ZAP scan found vulnerabilities or an error occurred"
+            -g gen.conf \
+            -r report.html || echo "ZAP scan found vulnerabilities or an error occurred. Exit code: $?"
           # El '|| echo' es para evitar que el workflow falle si ZAP encuentra vulnerabilidades (exit code > 0)
+          # Se ha añadido "$?" para mostrar el código de salida de ZAP, que puede ser útil para depurar.
 
       - name: Upload ZAP Report
         # Sube el informe generado como un artefacto del workflow
+        # Este paso se ejecutará incluso si el paso anterior tiene '|| echo ...'
+        if: always() # Asegura que este paso se ejecute siempre, incluso si el escaneo "falla" (encuentra vulnerabilidades)
         uses: actions/upload-artifact@v4
         with:
           name: ZAP-Report
