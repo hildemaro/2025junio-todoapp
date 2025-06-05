@@ -29,7 +29,6 @@ jobs:
             -v $(pwd)/zap/wrk:/zap/wrk:rw \
             zaproxy/zap-stable zap-baseline.py \
             -t https://www.example.com \
-            -g gen.conf \
             -r report.html || echo "ZAP scan found vulnerabilities or an error occurred"
           # El '|| echo' es para evitar que el workflow falle si ZAP encuentra vulnerabilidades (exit code > 0)
 
