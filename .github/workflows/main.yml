@@ -33,7 +33,7 @@ jobs:
             zaproxy/zap-stable zap-baseline.py \
             -t https://www.example.com \
             -g gen.conf \
-            -r report.html || echo "ZAP scan found vulnerabilities or an error occurred. Exit code: $?"
+            -w report.md || echo "ZAP scan found vulnerabilities or an error occurred. Exit code: $?"
           # El '|| echo' es para evitar que el workflow falle si ZAP encuentra vulnerabilidades (exit code > 0)
           # Se ha añadido "$?" para mostrar el código de salida de ZAP, que puede ser útil para depurar.
 
