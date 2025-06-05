@@ -44,5 +44,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ZAP-Report
-          path: ./zap/wrk/report.html
+          path: ./zap/wrk/report.md
           retention-days: 7 # Opcional: cuántos días mantener el artefacto
