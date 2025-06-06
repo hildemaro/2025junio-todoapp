@@ -17,7 +17,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Extract URL from Code
-        id: extract_url # Le damos un ID al paso para referenciar sus salidas
+        id: extract_url
         run: |
           # --- Elige UNA de las siguientes opciones y borra o comenta las otras ---
 
@@ -41,26 +41,35 @@ jobs:
           echo "URL extraída: $URL_VALUE"
           echo "URL_TO_SCAN=$URL_VALUE" >> $GITHUB_ENV
 
+      # Nuevo paso para obtener la fecha y hora
+      - name: Get Timestamp
+        id: timestamp
+        run: echo "TIMESTAMP=$(date +'%Y-%m-%d_%H-%M-%S')" >> $GITHUB_ENV
+
       - name: Create ZAP directory and Set Permissions
         run: |
           mkdir -p ./zap/wrk
           sudo chmod -R 777 ./zap/wrk
 
+      # Paso modificado para usar el timestamp en el nombre del reporte
       - name: Run ZAP Scan
         run: |
+          REPORT_NAME="report-${{ env.TIMESTAMP }}.html"
           echo "Iniciando escaneo ZAP en la URL extraída del código: ${{ env.URL_TO_SCAN }}"
-
+          echo "El informe se guardará como: $REPORT_NAME"
+          
           docker run --rm \
             -v $(pwd)/zap/wrk:/zap/wrk:rw \
             zaproxy/zap-stable zap-baseline.py \
             -t ${{ env.URL_TO_SCAN }} \
             -g gen.conf \
-            -r report.html || echo "ZAP scan found vulnerabilities or an error occurred. Exit code: $?"
+            -r $REPORT_NAME || echo "ZAP scan found vulnerabilities or an error occurred. Exit code: $?"
 
+      # Paso modificado para subir el reporte con el nombre dinámico
       - name: Upload ZAP Report
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: ZAP-Report
-          path: ./zap/wrk/report.html
+          name: ZAP-Report-${{ env.TIMESTAMP }}
+          path: ./zap/wrk/report-${{ env.TIMESTAMP }}.html
           retention-days: 7
