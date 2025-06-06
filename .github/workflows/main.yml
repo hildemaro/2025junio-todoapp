@@ -27,7 +27,7 @@ jobs:
 
           # Opción B: Para archivos JSON
           # Reemplaza '.deployment.targetUrl' y 'config.json' con tu selector y nombre de archivo
-          # URL_VALUE=$(jq -r '.deployment.targetUrl' config.json)
+          # URL_VALUE=$(jq -r '.deployment.targetUrl' config.json)_
           
           # Opción C: Para archivos de texto simple
           # Reemplaza 'url.txt' con el nombre de tu archivo
