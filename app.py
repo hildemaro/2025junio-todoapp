@@ -20,7 +20,7 @@ def add_task():
 
 @app.route('/delete/<int:task_id>')
 def delete_task(task_id):
-    """Elimina una tarea de la lista."""
+    """Elimina una tarea de la lista.."""
     global tasks
     # Filtra la lista para excluir la tarea con el id especificado
     # Nota: Los IDs aquí son simples índices + 1, en una app real serían más robustos.
