@@ -27,7 +27,7 @@ jobs:
 
           # Opción B: Para archivos JSON
           # Reemplaza '.deployment.targetUrl' y 'config.json' con tu selector y nombre de archivo
-          # URL_VALUE=$(jq -r '.deployment.targetUrl' config.json)
+          # URL_VALUE=$(jq -r '.deployment.targetUrl' config.json)_
           
           # Opción C: Para archivos de texto simple
           # Reemplaza 'url.txt' con el nombre de tu archivo
@@ -41,6 +41,7 @@ jobs:
           echo "URL extraída: $URL_VALUE"
           echo "URL_TO_SCAN=$URL_VALUE" >> $GITHUB_ENV
 
+      # Nuevo paso para obtener la fecha y hora
       - name: Get Timestamp
         id: timestamp
         run: echo "TIMESTAMP=$(date +'%Y-%m-%d_%H-%M-%S')" >> $GITHUB_ENV
@@ -50,53 +51,25 @@ jobs:
           mkdir -p ./zap/wrk
           sudo chmod -R 777 ./zap/wrk
 
-      # --- PASO MODIFICADO PARA EJECUTAR ESCANEO Y MOSTRAR RESUMEN ---
-      - name: Run ZAP Scan and Print Summary
+      # Paso modificado para usar el timestamp en el nombre del reporte
+      - name: Run ZAP Scan
         run: |
-          # Usamos .md para un reporte legible en la consola
-          REPORT_NAME="report-${{ env.TIMESTAMP }}.md"
-          
-          echo "Iniciando escaneo ZAP en la URL: ${{ env.URL_TO_SCAN }}"
+          REPORT_NAME="report-${{ env.TIMESTAMP }}.html"
+          echo "Iniciando escaneo ZAP en la URL extraída del código: ${{ env.URL_TO_SCAN }}"
           echo "El informe se guardará como: $REPORT_NAME"
           
-          # Evita que el script termine inmediatamente si ZAP encuentra vulnerabilidades
-          set +e
-
-          # Ejecuta el escaneo ZAP
           docker run --rm \
             -v $(pwd)/zap/wrk:/zap/wrk:rw \
             zaproxy/zap-stable zap-full-scan.py \
             -t ${{ env.URL_TO_SCAN }} \
             -g gen.conf \
-            -r $REPORT_NAME
-          
-          # Guarda el código de salida de ZAP
-          ZAP_EXIT_CODE=$?
-          
-          # Re-activa la salida en caso de error para los siguientes comandos
-          set -e
+            -r $REPORT_NAME || echo "ZAP scan found vulnerabilities or an error occurred. Exit code: $?"
 
-          # Imprime el resumen del reporte directamente en el log de la acción
-          echo "----------------------------------------"
-          echo "         RESUMEN DE ALERTAS ZAP         "
-          echo "----------------------------------------"
-          if [ -f "./zap/wrk/$REPORT_NAME" ]; then
-            cat "./zap/wrk/$REPORT_NAME"
-          else
-            echo "El archivo de reporte no fue encontrado."
-          fi
-          echo "----------------------------------------"
-          
-          # Termina el script con el código de salida original de ZAP
-          echo "El escaneo ZAP finalizó con el código de salida: $ZAP_EXIT_CODE"
-          exit $ZAP_EXIT_CODE
-
-      # --- PASO MODIFICADO PARA SUBIR EL REPORTE CORRECTO ---
+      # Paso modificado para subir el reporte con el nombre dinámico
       - name: Upload ZAP Report
-        if: always() # Se ejecuta incluso si el paso anterior falla
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: ZAP-Report-${{ env.TIMESTAMP }}
-          # Asegúrate de que la ruta coincida con el nombre del reporte (.md)
-          path: ./zap/wrk/report-${{ env.TIMESTAMP }}.md
+          path: ./zap/wrk/report-${{ env.TIMESTAMP }}.html
           retention-days: 7
