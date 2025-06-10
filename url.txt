@@ -1,1 +1,1 @@
-http://www.itsecgames.com/index.htm
+http://ec2-3-83-90-160.compute-1.amazonaws.com/login.php
