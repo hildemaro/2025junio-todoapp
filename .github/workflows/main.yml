@@ -38,7 +38,7 @@ jobs:
             echo "Error: No se pudo extraer la URL del archivo de código."
             exit 1
           fi
-          echo "URL extraída: $URL_VALUE"
+          echo " URL extraída: $URL_VALUE"
           echo "URL_TO_SCAN=$URL_VALUE" >> $GITHUB_ENV
 
       # Nuevo paso para obtener la fecha y hora
