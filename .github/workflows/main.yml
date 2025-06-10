@@ -55,7 +55,7 @@ jobs:
       - name: Run ZAP Scan
         run: |
           REPORT_NAME="report-${{ env.TIMESTAMP }}.html"
-          echo "Iniciando escaneo ZAP en la URL extraída del código: ${{ env.URL_TO_SCAN }}"
+          echo "Iniciando escaneo ZAP en la URL extraída del codigo: ${{ env.URL_TO_SCAN }}"
           echo "El informe se guardará como: $REPORT_NAME"
           
           docker run --rm \
