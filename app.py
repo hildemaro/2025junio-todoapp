@@ -12,7 +12,7 @@ def index():
 
 @app.route('/add', methods=['POST'])
 def add_task():
-    """Agrega una nueva tarea a la lista."""
+    """Agrega una nueva tarea a la lista.."""
     task_content = request.form['content']
     if task_content: # Asegúrate de que la tarea no esté vacía
         tasks.append({'id': len(tasks) + 1, 'content': task_content, 'done': False})
