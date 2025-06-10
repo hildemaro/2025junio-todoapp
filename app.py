@@ -7,7 +7,7 @@ tasks = []
 
 @app.route('/')
 def index():
-    """Muestra la lista de tareas."""
+    """Muestra la lista de tareas.."""
     return render_template('index.html', tasks=tasks)
 
 @app.route('/add', methods=['POST'])
